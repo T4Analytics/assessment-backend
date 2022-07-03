@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from modules.helpers import Helpers
 from modules.constants import Constants
 
+from routes import auth
 from routes import attendees
 from routes import choices
 from routes import customers
@@ -36,6 +37,7 @@ app = FastAPI(
 		"url": "https://t4analytics.com"
 	},
 	openapi_tags=[
+		{"name": "auth", "description": "Auth"},
 		{"name": "partners", "description": "Partners"},
 		{"name": "users", "description": "Users"},
 		{"name": "customers", "description": "Customers"},
@@ -44,15 +46,11 @@ app = FastAPI(
 		{"name": "partner_tests", "description": "Tests Available to Partners"},
 		{"name": "customer_tests", "description": "Tests Assigned to Customers"},
 		{"name": "questions", "description": "Questions in Tests"},
-		# {"name": "perms", "description": "Permissions"},
-		# {"name": "roles", "description": "Possible roles for user(s) (aka Groups)"},
-		# {"name": "role_perms", "description": "Roles' Permissions"},
+		{"name": "perms", "description": "Permissions"},
 		{"name": "papers", "description": "Papers"},
 		{"name": "optiongroups", "description": "Option Groups (for each question)"},
 		{"name": "sessions", "description": "Sessions (Open or Finished)"},
 		{"name": "choices", "description": "Users' Choices in Tests"},
-		# {"name": "user_roles", "description": "Users' Roles"},
-		# {"name": "user_perms", "description": "Users' permissions"},
 	],
 	docs_url="/api/v1/docs",
 	redoc_url="/api/v1/redoc",
@@ -67,6 +65,7 @@ def root():
 	return h.err(303, {"url": c.docsurl})
 
 
+app.include_router(auth.router)
 app.include_router(attendees.router)
 app.include_router(choices.router)
 app.include_router(customers.router)
