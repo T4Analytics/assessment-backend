@@ -1,17 +1,20 @@
 from enum import Enum, unique
 
-""" types of tests (myers-briggs etc) """
 @unique
 class TestType(str, Enum):
-	ttExtendedJungian = "ttExtendedJungian"
+	""" types of tests (myers-briggs etc) """
+	MB = "MB"
+	BIGFIVE = "BIGFIVE"
+	APTITUDE = "APTITUDE"
+	DISC = "DISC"
 
 	def __str__(self):
 		return str(self.value)
 
 
-""" types of questions (currently only multichoice) """
 @unique
 class QuestionType(str, Enum):
+	""" types of questions (currently only multichoice) """
 	qt_text = "qt_text" # mc meaning multiple choice
 	qt_images = "qt_images"
 
@@ -19,9 +22,8 @@ class QuestionType(str, Enum):
 		return str(self.value)
 
 
-
-""" states of answering sessions """
 class SessionState(str, Enum):
+	""" states of answering sessions """
 	ss_running = "ss_running"
 	ss_closed = "ss_closed"
 	ss_done = "ss_done"
@@ -30,8 +32,8 @@ class SessionState(str, Enum):
 		return str(self.value)
 
 
-""" used in both actions table and oplogs table (because an action can be queued for later or performed) """	
 class ActionType(str, Enum):
+	""" used in both actions table and oplogs table (because an action can be queued for later or performed) """
 	at_create = "at_create" # create question, create session
 	at_read = "at_read"
 	at_update = "at_update"
@@ -47,12 +49,12 @@ class ActionType(str, Enum):
 	at_assess: "at_assess" # assess (score) a candidate's finished session
 	at_createpdf: "at_createpdf" # create pdf from a finished session
 
-	def str (self):
+	def str(self):
 		return str(self.value)
 
 
-""" used in oplogs and action queue; in simplest terms, the list of objects (combines with actiontype, ie. actiontype is create, and actionobject is user) """	
 class ObjectType(str, Enum):
+	""" used in oplogs and action queue; in simplest terms, the list of objects (combines with actiontype, ie. actiontype is create, and actionobject is user) """
 	ot_page: "ot_page"
 	ot_attendee: "ot_attendee"
 	ot_choice: "ot_choice"
@@ -72,5 +74,5 @@ class ObjectType(str, Enum):
 	ot_userperm: "ot_userperm"
 	ot_userrole: "ot_userrole"
 
-	def str (self):
+	def str(self):
 		return str(self.value)
