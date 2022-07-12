@@ -24,6 +24,6 @@ async def create_optiongroups(records: List[OptionGroup]):
 
 
 @router.delete("/", response_model=List[int])
-async def delete_optiongroups(ids:List[int]):
+async def delete_optiongroups(ids: List[int]):
 	retval = h.deleting_endpoint("optiongroups", ids)
 	return retval

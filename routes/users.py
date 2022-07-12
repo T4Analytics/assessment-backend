@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 @router.get("/", response_model=List[User])
 async def read_users(partner_id=0):
-	return h.listing_endpoint("users", additional_conds={"partner_id":partner_id})
+	return h.listing_endpoint("users", additional_conds={"partner_id": partner_id})
 
 
 @router.post("/", response_model=List)

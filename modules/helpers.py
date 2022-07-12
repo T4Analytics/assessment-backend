@@ -1,15 +1,20 @@
+import json
 import os
-import sys
 import random
 import string
+import time
 from datetime import datetime
-from typing import Any, Union
+from typing import Any, Union, Dict
 import logging
 import psycopg2
 import psycopg2.extras
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.responses import Response
+
+from models.question import DetailedQuestion
 from modules.constants import Constants
+from modules.enums import SessionState
 
 c = Constants()
 
@@ -62,6 +67,10 @@ class Helpers:
 		return dt.strftime('%Y-%m-%d %H:%M:%S')
 	
 	@staticmethod
+	def nowts():
+		return time.time()
+	
+	@staticmethod
 	def log(*args, **kwargs):
 		if kwargs:
 			logging.info(kwargs)
@@ -69,12 +78,24 @@ class Helpers:
 			for arg in args:
 				logging.info(arg)
 	
-	def db_select(self, tablename, conds={}, order="id"):
+	def db_createorselect(self, tablename, conds):
+		row = self.db_select(tablename, conds)
+		if len(row) != 1:
+			row = self.db_insert(tablename, conds, [c.retrows])
+		return row[0]
+	
+	def db_selectsingle(self, tablename, conds) -> Union[dict, bool]:
+		rows = self.db_select(tablename, conds)
+		if len(rows) == 1:
+			return {**rows[0]}
+		return False
+	
+	def db_select(self, tablename, conds: Dict[str, Any] = Dict, order="id"):
 		# SELECT * FROM {tablename} WHERE a=b AND c>=d
 		qstr = f"SELECT * FROM {tablename} "
 		if conds:
 			qstr += "WHERE "
-			for key in conds:
+			for key in conds.keys():
 				if key[-4:] == "__ne":
 					qstr += f"{key[:-4]} != %({key})s AND "
 				elif key[-4:] == "__gt":
@@ -98,7 +119,7 @@ class Helpers:
 	
 	def db_insert(self, tablename, data, config=None):
 		if config is None:
-			config = [c.retids]
+			config = [c.retrows]
 		if type(data) != dict:
 			data = data.dict()
 		if "id" in data:
@@ -115,8 +136,6 @@ class Helpers:
 		for colname, colvalue in data.items():
 			qstr += f"{colname}, "
 			valuestr += "%s, "
-			if type(colvalue) == datetime:
-				colvalue = colvalue.strftime('%Y-%m-%d %H:%M:%S')
 			values.append(colvalue)
 		qstr = qstr[:-2] + ") values (" + valuestr[:-2] + ") RETURNING id"
 		try:
@@ -128,23 +147,49 @@ class Helpers:
 			elif c.retrows in config:
 				idx = self._cursor.fetchall()[0]["id"]
 				self._db.commit()
-				row = self.db_select(tablename, {"id": idx})
-				return row
+				return self.db_selectsingle(tablename, {"id": idx})
 			else:
 				return True
 		except:
 			raise
-			print(sys.exc_info())
-			return False
+			# print(sys.exc_info())
+			# return False
 	
-	def db_delete(self, tablename, id):
+	def db_update(self, tablename, where, data):
+		rows = self.db_select(tablename, {**where})
+		if len(rows) >= 1:
+			ids = self.field2tuple(rows, "id")
+			where = {"id__in": ids}
+		else:
+			return False
+		if type(data) != dict:
+			data = data.dict()
+		if "id" in data:
+			del data["id"]
+		if "updated_at" in data:
+			del data["updated_at"]
+		data["updated_at"] = datetime.now()
+		qstr = f"UPDATE {tablename} SET "
+		for colname in data.keys():
+			qstr += f"{colname}=%({colname})s, "
+			if type(data[colname]) == datetime:
+				data[colname] = data[colname].strftime('%Y-%m-%d %H:%M:%S')
+		qstr = qstr[:-2] + " WHERE id in %(id)s RETURNING id"
+		data["id"] = ids
+		try:
+			self._cursor.execute(qstr, data)
+		except:
+			raise
+		return self.db_select(tablename, where)
+	
+	def db_delete(self, tablename, idx):
 		qstr = f"UPDATE {tablename} SET is_deleted=1 WHERE id=%s"
 		try:
-			self._cursor.execute(qstr, (id,))
+			self._cursor.execute(qstr, (idx,))
 			self._db.commit()
-			return id
+			return idx
 		except:
-			print(sys.exc_info())
+			# print(sys.exc_info())
 			return False
 	
 	def idor404(self, tablename, conds):
@@ -154,24 +199,18 @@ class Helpers:
 		else:
 			raise HTTPException(status_code=404, detail=f"Record not found in {tablename}")
 	
-	def db_createorselect(self, tablename, conds):
-		row = self.db_select(tablename, conds)
-		if len(row) != 1:
-			row = self.db_insert(tablename, conds, [c.retrows])
-		return row[0]
+	def http404(self, text):
+		raise HTTPException(status_code=404, detail=text)
 	
-	def db_selectsingle(self, tablename, conds) -> Union[dict, bool]:
-		rows = self.db_select(tablename, conds)
-		if len(rows) == 1:
-			return rows[0]
-		return False
-	
-	def listing_endpoint(self, tablename, additional_conds={}):
+	def http200(self, text):
+		return Response(status_code=200)
+		
+	def listing_endpoint(self, tablename, additional_conds: dict = Dict):
 		if "is_deleted" not in additional_conds:
 			additional_conds["is_deleted"] = 0
 		return self.db_select(tablename, additional_conds)
 	
-	def adding_endpoint(self, tablename, records, additional_fields={}):
+	def adding_endpoint(self, tablename, records, additional_fields: dict = Dict):
 		ids = []
 		for record in records:
 			newrecord = additional_fields
@@ -181,12 +220,57 @@ class Helpers:
 		return ids
 	
 	def deleting_endpoint(self, tablename, ids):
-		for id in ids:
-			self.db_delete(tablename, id)
+		for idx in ids:
+			self.db_delete(tablename, idx)
 		return ids
 	
-	def env(self, varname, default_value):
+	def patching_endpoint(self, tablename, ids):
+		raise AssertionError
+		# TODO: prepare patching endpoint
+	
+	@staticmethod
+	def env(varname, default_value):
 		return os.getenv(varname, default_value)
 	
-	def err(self, errcode: int, data: Any):
+	@staticmethod
+	def err(errcode: int, data: Any):
 		return JSONResponse(data, status_code=errcode)
+	
+	def create_attendee_session(self, paper_id):
+		""" create a new session for an attendee/paper pair """
+		paper = self.db_selectsingle(c.tblPapers, {"id": paper_id})
+		attendee = self.db_selectsingle(c.tblAttendees, {"id": paper["attendee_id"]})
+		data = {"attendee_id": attendee["id"], "paper_id": paper_id, "state": SessionState.RUNNING, "started_at": self.now(), "token": self.randstr(64)}
+		row = self.db_insert(c.tblSessions, data, [c.retrows])
+		return row["token"]
+	
+	def close_attendee_sessions(self, paper_id):
+		""" closes all dangling (previous) sessions of a paper """
+		self.db_update(c.tblSessions, {"paper_id": paper_id, "state": SessionState.RUNNING}, {"state": SessionState.CLOSED, "finished_at": self.now()})
+	
+	def questions_choices(self, test_id, paper_id, question_id: int = 0) -> dict:
+		""" returns the choices attendee made for a specific paper (and a specific question if non-zero) """
+		questions = self.field2tuple(self.db_select(c.tblQuestions, {"test_id": test_id}))
+		choices = self.field2key(self.db_select(c.tblChoices, {"paper_id": paper_id}), "question_id")
+		result = {}
+		for question in questions:
+			if question in choices:
+				result[question] = choices[question]["choice"]
+			else:
+				result[question] = 0
+		if question_id:
+			result = {question_id: result[question_id]}
+		return result
+	
+	def detailed_question(self, test_id: int, paper_id: int, question_id: int) -> DetailedQuestion:
+		question_dict = self.db_selectsingle(c.tblQuestions, {"test_id": test_id, "id": question_id})
+		if not question_dict:
+			self.http404("Question not found")
+		question_dict["options"] = []
+		question = DetailedQuestion(**question_dict)
+		option_group = self.db_selectsingle(c.tblOptionGroups, {"id": question.optiongroup_id})
+		if not option_group:
+			self.http404("Question options not found")
+		question.options = json.loads(option_group["texts"])
+		question.choice = self.questions_choices(test_id, paper_id, question_id)[question_id]
+		return question

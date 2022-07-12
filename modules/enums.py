@@ -1,5 +1,6 @@
 from enum import Enum, unique
 
+
 @unique
 class TestType(str, Enum):
 	""" types of tests (myers-briggs etc) """
@@ -15,39 +16,39 @@ class TestType(str, Enum):
 @unique
 class QuestionType(str, Enum):
 	""" types of questions (currently only multichoice) """
-	qt_text = "qt_text" # mc meaning multiple choice
+	qt_text = "qt_text"  # mc meaning multiple choice
 	qt_images = "qt_images"
 
-	def str (self):
+	def str(self):
 		return str(self.value)
 
 
 class SessionState(str, Enum):
 	""" states of answering sessions """
-	ss_running = "ss_running"
-	ss_closed = "ss_closed"
-	ss_done = "ss_done"
+	RUNNING = "RUNNING"
+	CLOSED = "CLOSED"
+	DONE = "DONE"
 
-	def str (self):
+	def str(self):
 		return str(self.value)
 
 
 class ActionType(str, Enum):
 	""" used in both actions table and oplogs table (because an action can be queued for later or performed) """
-	at_create = "at_create" # create question, create session
-	at_read = "at_read"
-	at_update = "at_update"
-	at_delete = "at_delete"
-	at_skip = "at_skip" # skip question
-	at_fetch = "at_skip" # fetch another question
-	at_answer = "at_answer" # answer question
-	at_login = "at_login"
-	at_logout = "at_logout"
-	at_start = "at_start"
-	at_end = "at_end"
-	at_cron = "at_cron"
-	at_assess: "at_assess" # assess (score) a candidate's finished session
-	at_createpdf: "at_createpdf" # create pdf from a finished session
+	CREATE = "CREATE"  # create question, create session
+	READ = "READ"
+	UPDATE = "UPDATE"
+	DELETE = "DELETE"
+	SKIP = "SKIP"  # skip question
+	FETCH = "FETCH"  # fetch another question
+	ANSWER = "ANSWER"  # answer question
+	LOGIN = "LOGIN"
+	LOGOUT = "LOGOUT"
+	START = "START"
+	END = "END"
+	CRON = "CRON"
+	ACCESS = "ACCESS"  # assess (score) a candidate's finished session
+	CREATEPDF = "CREATEPDF"  # create pdf from a finished session
 
 	def str(self):
 		return str(self.value)

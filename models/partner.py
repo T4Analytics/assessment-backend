@@ -1,7 +1,7 @@
 from models.base_model import BaseModel
 
 
-""" list of our partners """
 class Partner(BaseModel):
+	""" list of our partners """
 	title: str = ""
 	email: str = ""

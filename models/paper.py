@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Union, List
-# from typing import Dict
+from typing import Union
+from typing import Dict
 from sqlmodel import SQLModel
 from models.base_model import BaseModel
 # from sqlmodel import Column, Field
@@ -43,5 +43,6 @@ class SimplePaper(SQLModel):
 	min_start_at: Union[datetime, None]
 	max_end_at: Union[datetime, None]
 	pretext: str
+	session_token: str
 	question_count: int
-	questions: List[int]
+	choices: Dict[int, int]

@@ -1,22 +1,22 @@
 from models.base_model import BaseModel
 from modules.enums import QuestionType
-from models.optiongroup import OptionGroup
-from typing import Optional, List
+from typing import Union
 
 
 class Question(BaseModel):
-	# """ each question in each test """
+	""" each question in each test """
 	typ: QuestionType = str
-	pretext: Optional[str] = ""
-	body: Optional[str] = ""
-	posttext: Optional[str] = ""
+	pretext: Union[str, None] = ""
+	body: Union[str, None] = ""
+	posttext: Union[str, None] = ""
 	dimension: str
-	modification: str
-	optiongroup_id: OptionGroup
-	# optiongroup_id: int
+	modification: int = 0
+	optiongroup_id: int
 	test_id: int
 	qorder: int
 
 
 class DetailedQuestion(Question):
-	options: List[OptionGroup]
+	""" question and options combined """
+	options: list[list[str, int]]
+	choice: int

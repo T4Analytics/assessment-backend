@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from models.choice import MinimalChoice
 from modules.helpers import Helpers
 
 h = Helpers()

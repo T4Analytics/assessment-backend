@@ -2,8 +2,8 @@ from models.base_model import BaseModel
 from typing import Union
 
 
-""" list of users """
 class User(BaseModel):
+	""" list of users """
 	partner_id: int = 0
 	email: str = ""
 	phone: Union[str, None] = None

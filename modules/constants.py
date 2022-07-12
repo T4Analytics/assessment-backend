@@ -14,3 +14,6 @@ class Constants:
 	tblPartnerTests = "partner_tests"
 	tblAttendees = "attendees"
 	tblQuestions = "questions"
+	tblOptionGroups = "optiongroups"
+	tblSessions = "sessions"
+	tblChoices = "choices"

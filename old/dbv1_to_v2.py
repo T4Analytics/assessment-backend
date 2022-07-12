@@ -1,3 +1,5 @@
+'''
+
 @app.get("/import")
 async def import_old_data() -> Dict:
 	""" imports old database tables, surveys=>tests, questions=>questions,optiongroups """
@@ -32,3 +34,4 @@ async def import_old_data() -> Dict:
 		# return [question, test, optiongroup, newquestion]
 	return questions
 
+'''

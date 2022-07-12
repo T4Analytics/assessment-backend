@@ -1,6 +1,6 @@
 from models.base_model import BaseModel
 
 
-""" user groups """
 class Role(BaseModel):
+	""" user groups """
 	title: str

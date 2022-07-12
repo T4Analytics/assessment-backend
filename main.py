@@ -1,10 +1,10 @@
 import sys
 import os
 import fastapi
-from routes import papers
 from modules.helpers import Helpers
 from modules.constants import Constants
 
+from routes import assessments
 # from routes import auth
 # from routes import attendees
 # from routes import choices
@@ -49,7 +49,8 @@ app = fastapi.FastAPI(
 		# {"name": "tests", "description": "Tests"},
 		# {"name": "questions", "description": "Questions in Tests"},
 		# {"name": "choices", "description": "Users' Choices in Tests"},
-		{"name": "papers", "description": "Papers"},
+		# {"name": "papers", "description": "Papers"},
+		{"name": "assessments", "description": "Assessment (testing) specific functionality"},
 	],
 	docs_url="/api/v1/docs",
 	redoc_url="/api/v1/redoc",
@@ -76,4 +77,5 @@ def root():
 # app.include_router(tests.router)
 # app.include_router(users.router)
 # app.include_router(questions.router)
-app.include_router(papers.router)
+# app.include_router(papers.router)
+app.include_router(assessments.router)

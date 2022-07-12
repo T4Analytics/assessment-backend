@@ -1,10 +1,5 @@
 from typing import Dict
 from fastapi import APIRouter
-
-
-from models.attendee import Attendee
-
-
 from modules.helpers import Helpers
 
 h = Helpers()

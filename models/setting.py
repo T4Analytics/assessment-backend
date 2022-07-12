@@ -1,8 +1,8 @@
 from models.base_model import BaseModel
 
 
-""" Application and company settings """
 class Setting(BaseModel):
+	""" Application and company settings """
 	company_id: int = 0
 	slug: str
 	typ: str
