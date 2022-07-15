@@ -17,6 +17,6 @@ class Question(BaseModel):
 
 
 class DetailedQuestion(Question):
-	""" question and options combined """
-	options: list[list[str, int]]
+	# """ question and options combined """
+	options: list
 	choice: int

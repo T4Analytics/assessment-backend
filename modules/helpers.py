@@ -37,6 +37,7 @@ class Helpers:
 			user=self.env("db_user", "t4"),
 			password=self.env("db_password", "t4")
 		)
+		self._db.autocommit = True
 		self._cursor = self._db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 		logging.basicConfig(
 			filename="/tmp/t4-assessment-debug.log",
@@ -44,6 +45,10 @@ class Helpers:
 			format='%(asctime)s %(levelname)-8s %(message)s',
 			datefmt='%Y-%m-%d %H:%M:%S'
 		)
+	
+	@staticmethod
+	def jprint(*args):
+		print(json.dumps(args, default=str, indent=4, sort_keys=True))
 	
 	@staticmethod
 	def field2tuple(rows, fieldname="id"):
@@ -67,7 +72,9 @@ class Helpers:
 		return dt.strftime('%Y-%m-%d %H:%M:%S')
 	
 	@staticmethod
-	def nowts():
+	def nowts(return_int: bool = False):
+		if return_int:
+			return int(time.time())
 		return time.time()
 	
 	@staticmethod
@@ -79,10 +86,10 @@ class Helpers:
 				logging.info(arg)
 	
 	def db_createorselect(self, tablename, conds):
-		row = self.db_select(tablename, conds)
-		if len(row) != 1:
+		row = self.db_selectsingle(tablename, conds)
+		if not row:
 			row = self.db_insert(tablename, conds, [c.retrows])
-		return row[0]
+		return row
 	
 	def db_selectsingle(self, tablename, conds) -> Union[dict, bool]:
 		rows = self.db_select(tablename, conds)
@@ -90,7 +97,7 @@ class Helpers:
 			return {**rows[0]}
 		return False
 	
-	def db_select(self, tablename, conds: Dict[str, Any] = Dict, order="id"):
+	def db_select(self, tablename, conds: Dict[str, Any] = Dict, order="id DESC"):
 		# SELECT * FROM {tablename} WHERE a=b AND c>=d
 		qstr = f"SELECT * FROM {tablename} "
 		if conds:
@@ -110,7 +117,7 @@ class Helpers:
 					qstr += f"{key[:-5]} <= %({key})s AND "
 				else:
 					qstr += f"{key} = %({key})s AND "
-			qstr = qstr[:-4] + f" ORDER BY {order} DESC"
+			qstr = qstr[:-4] + f" ORDER BY {order}"
 			self._cursor.execute(qstr, conds)
 		else:
 			qstr += f"ORDER BY {order} DESC"
@@ -150,7 +157,7 @@ class Helpers:
 				return self.db_selectsingle(tablename, {"id": idx})
 			else:
 				return True
-		except:
+		except Exception:
 			raise
 			# print(sys.exc_info())
 			# return False
@@ -174,11 +181,11 @@ class Helpers:
 			qstr += f"{colname}=%({colname})s, "
 			if type(data[colname]) == datetime:
 				data[colname] = data[colname].strftime('%Y-%m-%d %H:%M:%S')
-		qstr = qstr[:-2] + " WHERE id in %(id)s RETURNING id"
+		qstr = qstr[:-2] + " WHERE id in %(id)s"
 		data["id"] = ids
 		try:
 			self._cursor.execute(qstr, data)
-		except:
+		except Exception:
 			raise
 		return self.db_select(tablename, where)
 	
@@ -188,7 +195,7 @@ class Helpers:
 			self._cursor.execute(qstr, (idx,))
 			self._db.commit()
 			return idx
-		except:
+		except Exception:
 			# print(sys.exc_info())
 			return False
 	
@@ -202,9 +209,13 @@ class Helpers:
 	def http404(self, text):
 		raise HTTPException(status_code=404, detail=text)
 	
-	def http200(self, text):
-		return Response(status_code=200)
-		
+	def http422(self, text):
+		raise HTTPException(status_code=422, detail=text)
+	
+	@staticmethod
+	def http200(content):
+		return Response(status_code=200, content=content)
+	
 	def listing_endpoint(self, tablename, additional_conds: dict = Dict):
 		if "is_deleted" not in additional_conds:
 			additional_conds["is_deleted"] = 0
@@ -236,11 +247,11 @@ class Helpers:
 	def err(errcode: int, data: Any):
 		return JSONResponse(data, status_code=errcode)
 	
-	def create_attendee_session(self, paper_id):
+	def create_attendee_session(self, paper):
 		""" create a new session for an attendee/paper pair """
-		paper = self.db_selectsingle(c.tblPapers, {"id": paper_id})
+		paper = self.db_selectsingle(c.tblPapers, {"id": paper["id"]})
 		attendee = self.db_selectsingle(c.tblAttendees, {"id": paper["attendee_id"]})
-		data = {"attendee_id": attendee["id"], "paper_id": paper_id, "state": SessionState.RUNNING, "started_at": self.now(), "token": self.randstr(64)}
+		data = {"attendee_id": attendee["id"], "paper_id": paper["id"], "state": SessionState.RUNNING, "started_at": self.now(), "token": self.randstr(c.tokenlen)}
 		row = self.db_insert(c.tblSessions, data, [c.retrows])
 		return row["token"]
 	
@@ -250,20 +261,20 @@ class Helpers:
 	
 	def questions_choices(self, test_id, paper_id, question_id: int = 0) -> dict:
 		""" returns the choices attendee made for a specific paper (and a specific question if non-zero) """
-		questions = self.field2tuple(self.db_select(c.tblQuestions, {"test_id": test_id}))
-		choices = self.field2key(self.db_select(c.tblChoices, {"paper_id": paper_id}), "question_id")
+		questions = self.field2key(self.db_select(c.tblQuestions, {"test_id": test_id}), "qorder")
+		choices = self.field2key(self.db_select(c.tblChoices, {"paper_id": paper_id}, order="id"), "question_id")
 		result = {}
-		for question in questions:
-			if question in choices:
-				result[question] = choices[question]["choice"]
+		for (qorder, question) in questions.items():
+			if question["id"] in choices:
+				result[question["id"]] = {"token": question["token"], "choice": choices[question["id"]]["choice"]}
 			else:
-				result[question] = 0
+				result[question["id"]] = {"token": question["token"], "choice": 0}
 		if question_id:
 			result = {question_id: result[question_id]}
 		return result
 	
-	def detailed_question(self, test_id: int, paper_id: int, question_id: int) -> DetailedQuestion:
-		question_dict = self.db_selectsingle(c.tblQuestions, {"test_id": test_id, "id": question_id})
+	def detailed_question(self, test_id: int, paper_id: int, question_token: str) -> DetailedQuestion:
+		question_dict = self.db_selectsingle(c.tblQuestions, {"test_id": test_id, "token": question_token})
 		if not question_dict:
 			self.http404("Question not found")
 		question_dict["options"] = []
@@ -272,5 +283,5 @@ class Helpers:
 		if not option_group:
 			self.http404("Question options not found")
 		question.options = json.loads(option_group["texts"])
-		question.choice = self.questions_choices(test_id, paper_id, question_id)[question_id]
+		question.choice = self.questions_choices(test_id, paper_id, question_dict["id"])[question_dict["id"]]["choice"]
 		return question

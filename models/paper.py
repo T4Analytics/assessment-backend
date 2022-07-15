@@ -31,7 +31,6 @@ class Paper(BaseModel):
 
 class DemoPaper(SQLModel):
 	""" used in creating demo papers """
-	id: int
 	token: str
 	allowed_sec: int
 
@@ -45,4 +44,6 @@ class SimplePaper(SQLModel):
 	pretext: str
 	session_token: str
 	question_count: int
-	choices: Dict[int, int]
+	choices: dict
+	is_completed: int
+	active_question_token: Union[str, None]

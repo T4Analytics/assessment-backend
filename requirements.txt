@@ -1,6 +1,6 @@
 fastapi
 pydantic
-uvicorn[standard]
+uvicorn
 sqlmodel
 email-validator
 psycopg2-binary

@@ -3,6 +3,8 @@ class Constants:
 	apiurl = "https://asdev.t4analytics.com/api/v1/"
 	docsurl = "https://asdev.t4analytics.com/api/v1/docs"
 
+	tokenlen = 32  # system-wide default token length
+	
 	retids = "retids"  # return ids
 	retrows = "retrows"  # return rows
 
