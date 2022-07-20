@@ -46,4 +46,13 @@ class SimplePaper(SQLModel):
 	question_count: int
 	choices: dict
 	is_completed: int
+	started_at: int
+	finished_at: int
 	active_question_token: Union[str, None]
+
+
+class MinimalPaper(SQLModel):
+	""" used when responding to paper ticks """
+	token: str
+	spent_sec: int
+	allowed_sec: int

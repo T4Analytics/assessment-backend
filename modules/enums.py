@@ -27,7 +27,6 @@ class SessionState(str, Enum):
 	""" states of answering sessions """
 	RUNNING = "RUNNING"
 	CLOSED = "CLOSED"
-	DONE = "DONE"
 
 	def str(self):
 		return str(self.value)

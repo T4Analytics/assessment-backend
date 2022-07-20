@@ -206,11 +206,8 @@ class Helpers:
 		else:
 			raise HTTPException(status_code=404, detail=f"Record not found in {tablename}")
 	
-	def http404(self, text):
-		raise HTTPException(status_code=404, detail=text)
-	
-	def http422(self, text):
-		raise HTTPException(status_code=422, detail=text)
+	def http(self, status_code, text):
+		raise HTTPException(status_code=status_code, detail=text)
 	
 	@staticmethod
 	def http200(content):
@@ -244,8 +241,16 @@ class Helpers:
 		return os.getenv(varname, default_value)
 	
 	@staticmethod
-	def err(errcode: int, data: Any):
+	def err(errcode: int, errtext: str = "", data: dict = {}):
+		data["error"] = errtext
+		data["errorcode"] = errcode
 		return JSONResponse(data, status_code=errcode)
+	
+	@staticmethod
+	def succ(data: dict = {}):
+		data["error"] = ""
+		data["errorcode"] = 0
+		return JSONResponse(data)
 	
 	def create_attendee_session(self, paper):
 		""" create a new session for an attendee/paper pair """

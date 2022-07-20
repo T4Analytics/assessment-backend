@@ -62,7 +62,7 @@ app = fastapi.FastAPI(
 @app.get("/api/", tags=["root"], include_in_schema=False)
 @app.get("/api/v1/", tags=["root"], include_in_schema=False)
 def root():
-	return h.err(303, {"url": c.docsurl})
+	return h.err(303, "Resource moved", {"url": c.docsurl})
 
 
 # app.include_router(auth.router)
