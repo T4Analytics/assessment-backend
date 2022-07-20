@@ -44,8 +44,8 @@ class SimplePaper(SQLModel):
 	question_count: int
 	choices: dict
 	is_completed: int
-	started_at: Union[int, None]
-	finished_at: Union[int, None]
+	started_at: Union[datetime, None]
+	finished_at: Union[datetime, None]
 	active_question_token: Union[str, None]
 
 
