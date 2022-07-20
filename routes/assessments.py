@@ -36,7 +36,9 @@ async def get_paper_info(paper_token: str) -> SimplePaper:
 	if not paper_dict:
 		h.http(404, "No such paper")
 	test = h.db_selectsingle(c.tblTests, {"id": paper_dict["test_id"]})
-	paper = SimplePaper(spent_sec=paper_dict["spent_sec"], allowed_sec=paper_dict["allowed_sec"], min_start_at=paper_dict["min_start_at"], max_end_at=paper_dict["max_end_at"], pretext=test["pretext"], question_count=0, choices={}, session_token="", is_completed=paper_dict["is_completed"], active_question_token=paper_dict["active_question_token"], started_at=paper_dict["started_at"], finished_at=paper_dict["finished_at"])
+	if not test:
+		h.http(404, "No such test")
+	paper = SimplePaper(spent_sec=paper_dict["spent_sec"], allowed_sec=paper_dict["allowed_sec"], min_start_at=paper_dict["min_start_at"], max_end_at=paper_dict["max_end_at"], pretext=test["pretext"], question_count=0, choices={}, session_token="", is_completed=paper_dict["is_completed"], active_question_token=paper_dict["active_question_token"], started_at=paper_dict["started_at"], finished_at=paper_dict["finished_at"], test_type=test["test_type"])
 	paper.choices = h.questions_choices(paper_dict["test_id"], paper_dict["id"])
 	paper.question_count = len(paper.choices)
 	h.close_attendee_sessions(paper_dict["id"])

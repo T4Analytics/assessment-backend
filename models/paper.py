@@ -39,6 +39,7 @@ class SimplePaper(SQLModel):
 	min_start_at: Union[datetime, None]
 	max_end_at: Union[datetime, None]
 	pretext: str
+	test_type: str
 	session_token: str
 	question_count: int
 	choices: dict
