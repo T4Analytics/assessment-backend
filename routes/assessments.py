@@ -53,27 +53,10 @@ async def start_paper(paper_token: str, session_token: str):
 		h.http(422, "Paper already completed")
 	if paper_dict["started_at"] is not None:
 		h.http(409, "Paper already started")
-	session_dict = h.db_selectsingle(c.tblSessions, {"token": session_token, "paper_id": paper_dict["id"], "state":SessionState.RUNNING})
+	session_dict = h.db_selectsingle(c.tblSessions, {"token": session_token, "paper_id": paper_dict["id"], "state": SessionState.RUNNING})
 	if not session_dict:
 		h.http(404, "Session not found or is not the active one")
-	h.db_update(c.tblPapers, {id: paper_dict["id"]}, {"started_at": h.now()})
-	return h.succ()
-
-
-@router.post("/papers/{paper_token}/end")
-async def finish_paper(paper_token: str, session_token: str):
-	""" finish the testing phase of a paper """
-	paper_dict = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
-	if not paper_dict:
-		h.http(404, "Paper not found")
-	if paper_dict["is_completed"] or paper_dict["finished_at"]:
-		h.http(422, "Paper already completed")
-	if paper_dict["started_at"] is None:
-		h.http(409, "Paper is not even started")
-	session_dict = h.db_selectsingle(c.tblSessions, {"token": session_token, "paper_id": paper_dict["id"], "state":SessionState.RUNNING})
-	if not session_dict:
-		h.http(404, "Session not found or is not the active one")
-	h.db_update(c.tblPapers, {id: paper_dict["id"]}, {"finished_at": h.now()})
+	h.db_update(c.tblPapers, {"id": paper_dict["id"]}, {"started_at": h.now()})
 	return h.succ()
 
 
@@ -87,7 +70,7 @@ async def tick_paper(paper_token: str, session_token: str) -> MinimalPaper:
 		h.http(422, "Paper already completed")
 	if paper_dict["started_at"] is None:
 		h.http(409, "Paper is not even started")
-	session_dict = h.db_selectsingle(c.tblSessions, {"token": session_token, "paper_id": paper_dict["id"], "state":SessionState.RUNNING})
+	session_dict = h.db_selectsingle(c.tblSessions, {"token": session_token, "paper_id": paper_dict["id"], "state": SessionState.RUNNING})
 	if not session_dict:
 		h.http(404, "Session not found or is not the active one")
 	newstate = SessionState.RUNNING
@@ -99,8 +82,26 @@ async def tick_paper(paper_token: str, session_token: str) -> MinimalPaper:
 	else:
 		h.db_update(c.tblPapers, {"id": paper_dict["id"]}, {"spent_sec": paper_dict["spent_sec"]+1})
 		h.db_update(c.tblSessions, {"id": session_dict["id"]}, {"spent_sec": session_dict["spent_sec"]+1, "state": newstate})
-	paper = MinimalPaper(token= paper_token, spent_sec=paper_dict["spent_sec"], allowed_sec=paper_dict["allowed_sec"], state=newstate)
+	paper = MinimalPaper(token=paper_token, spent_sec=paper_dict["spent_sec"], allowed_sec=paper_dict["allowed_sec"], state=newstate)
 	return paper
+
+
+@router.post("/papers/{paper_token}/end")
+async def finish_paper(paper_token: str, session_token: str):
+	""" finish the testing phase of a paper """
+	paper_dict = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	if not paper_dict:
+		h.http(404, "Paper not found")
+	if paper_dict["is_completed"] or paper_dict["finished_at"]:
+		h.http(422, "Paper already completed")
+	if paper_dict["started_at"] is None:
+		h.http(409, "Paper is not even started")
+	session_dict = h.db_selectsingle(c.tblSessions, {"token": session_token, "paper_id": paper_dict["id"], "state": SessionState.RUNNING})
+	if not session_dict:
+		h.http(404, "Session not found or is not the active one")
+	h.db_update(c.tblPapers, {"id": paper_dict["id"]}, {"finished_at": h.now()})
+	h.db_update(c.tblSessions, {"id": session_dict["id"]}, {"finished_at": h.now(), "state": SessionState.CLOSED})
+	return h.succ()
 
 
 @router.get("/papers/{paper_token}/questions/{question_token}", response_model=DetailedQuestion)

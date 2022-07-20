@@ -1,10 +1,7 @@
 from datetime import datetime
 from typing import Union
-from typing import Dict
 from sqlmodel import SQLModel
 from models.base_model import BaseModel
-# from sqlmodel import Column, Field
-# from pydantic import Json
 
 
 class Paper(BaseModel):
@@ -46,8 +43,8 @@ class SimplePaper(SQLModel):
 	question_count: int
 	choices: dict
 	is_completed: int
-	started_at: int
-	finished_at: int
+	started_at: Union[int, None]
+	finished_at: Union[int, None]
 	active_question_token: Union[str, None]
 
 

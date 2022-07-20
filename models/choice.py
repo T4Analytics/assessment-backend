@@ -22,6 +22,7 @@ class ChoiceNoDates(SQLModel):
 	choice: int
 	completed_ms: int  # how long did it take
 
+
 class MinimalChoice(BaseModel):
 	""" question_id and choice_id only (for accepting answers) """
 	question_id: int

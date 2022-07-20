@@ -4,7 +4,7 @@ import random
 import string
 import time
 from datetime import datetime
-from typing import Any, Union, Dict
+from typing import Any, Union, Dict, Optional
 import logging
 import psycopg2
 import psycopg2.extras
@@ -21,15 +21,15 @@ c = Constants()
 
 class Helpers:
 	_db: None
-	
+
 	# this attribute and method make this a singleton
 	_instance = None
-	
+
 	def __new__(cls, *args, **kwargs):
 		if not isinstance(cls._instance, cls):
 			cls._instance = object.__new__(cls, *args, **kwargs)
 		return cls._instance
-	
+
 	def __init__(self):
 		self._db = psycopg2.connect(
 			host=self.env("db_server", "localhost"),
@@ -62,7 +62,7 @@ class Helpers:
 	
 	def randstr(self, length: int = 8):
 		letters = string.ascii_lowercase + string.digits
-		randy = ''.join(random.choice(letters) for i in range(length))
+		randy = ''.join(random.choice(letters) for _ in range(length))
 		self.log(["randy", randy])
 		return randy
 	
@@ -195,7 +195,7 @@ class Helpers:
 			self._cursor.execute(qstr, (idx,))
 			self._db.commit()
 			return idx
-		except Exception:
+		except (Exception, ):
 			# print(sys.exc_info())
 			return False
 	
@@ -241,13 +241,17 @@ class Helpers:
 		return os.getenv(varname, default_value)
 	
 	@staticmethod
-	def err(errcode: int, errtext: str = "", data: dict = {}):
+	def err(errcode: int, errtext: str = "", data: Optional[dict] = None):
+		if data is None:
+			data = {}
 		data["error"] = errtext
 		data["errorcode"] = errcode
 		return JSONResponse(data, status_code=errcode)
 	
 	@staticmethod
-	def succ(data: dict = {}):
+	def succ(data: Optional[dict] = None):
+		if data is None:
+			data = {}
 		data["error"] = ""
 		data["errorcode"] = 0
 		return JSONResponse(data)
@@ -281,12 +285,12 @@ class Helpers:
 	def detailed_question(self, test_id: int, paper_id: int, question_token: str) -> DetailedQuestion:
 		question_dict = self.db_selectsingle(c.tblQuestions, {"test_id": test_id, "token": question_token})
 		if not question_dict:
-			self.http404("Question not found")
+			self.http(404, "Question not found")
 		question_dict["options"] = []
 		question = DetailedQuestion(**question_dict)
 		option_group = self.db_selectsingle(c.tblOptionGroups, {"id": question.optiongroup_id})
 		if not option_group:
-			self.http404("Question options not found")
+			self.http(404, "Question options not found")
 		question.options = json.loads(option_group["texts"])
 		question.choice = self.questions_choices(test_id, paper_id, question_dict["id"])[question_dict["id"]]["choice"]
 		return question
