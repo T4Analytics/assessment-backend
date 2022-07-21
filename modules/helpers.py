@@ -258,7 +258,7 @@ class Helpers:
 	
 	def create_attendee_session(self, paper):
 		""" create a new session for an attendee/paper pair """
-		paper = self.db_selectsingle(c.tblPapers, {"id": paper["id"]})
+		paper = self.paper_calculate_status({"id": paper["id"]})
 		attendee = self.db_selectsingle(c.tblAttendees, {"id": paper["attendee_id"]})
 		data = {"attendee_id": attendee["id"], "paper_id": paper["id"], "state": SessionState.RUNNING, "started_at": self.now(), "token": self.randstr(c.tokenlen)}
 		row = self.db_insert(c.tblSessions, data, [c.retrows])
@@ -294,3 +294,23 @@ class Helpers:
 		question.options = json.loads(option_group["texts"])
 		question.choice = self.questions_choices(test_id, paper_id, question_dict["id"])[question_dict["id"]]["choice"]
 		return question
+	
+	def paper_calculate_status(self, conds: dict) -> dict:
+		paper = self.db_selectsingle(c.tblPapers, conds)
+		# no need to recalculate if paper is already done
+		if paper["finished_at"]:
+			return paper
+		if paper["spent_sec"] >= paper["allowed_sec"]:
+			return paper
+		# calculate paper's time and status
+		now = datetime.now()
+		diff = now - paper["started_at"]
+		spent_sec = diff.total_seconds()
+		update = {"spent_sec": spent_sec}
+		if spent_sec > paper["allowed_sec"]:
+			update["spent_sec"] = paper["allowed_sec"]
+			update["is_completed"] = 1
+			if not paper["finished_at"]:
+				update["finished_at"] = datetime.now()
+		self.db_update(c.tblPapers, {"id": paper["id"]}, update)
+		return self.db_selectsingle(c.tblPapers, conds)

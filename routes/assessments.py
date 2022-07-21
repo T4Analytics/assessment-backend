@@ -32,7 +32,7 @@ async def create_demo_paper(paper_type: TestType = "MB", allowed_sec: int = 1200
 @router.get("/papers/{paper_token}", response_model=SimplePaper)
 async def get_paper_info(paper_token: str) -> SimplePaper:
 	""" get info about specific paper """
-	paper_dict = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	paper_dict = h.paper_calculate_status({"token": paper_token, "is_deleted": 0})
 	if not paper_dict:
 		h.http(404, "No such paper")
 	test = h.db_selectsingle(c.tblTests, {"id": paper_dict["test_id"]})
@@ -50,7 +50,7 @@ async def get_paper_info(paper_token: str) -> SimplePaper:
 async def start_paper(paper_token: str, session_token: str):
 	# TODO: this function
 	""" start the testing phase of a paper """
-	paper_dict = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	paper_dict = h.paper_calculate_status({"token": paper_token, "is_deleted": 0})
 	if not paper_dict:
 		h.http(404, "Paper not found")
 	if paper_dict["is_completed"] or paper_dict["finished_at"]:
@@ -64,10 +64,10 @@ async def start_paper(paper_token: str, session_token: str):
 	return h.succ()
 
 
-@router.post("/papers/{paper_token}/tick", response_model=MinimalPaper)
+@router.post("/papers/{paper_token}/tick", response_model=MinimalPaper, include_in_schema=False)
 async def tick_paper(paper_token: str, session_token: str) -> MinimalPaper:
 	""" forward paper one more second """
-	paper_dict = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	paper_dict = h.paper_calculate_status({"token": paper_token, "is_deleted": 0})
 	if not paper_dict:
 		h.http(404, "Paper not found")
 	if paper_dict["is_completed"] or paper_dict["finished_at"]:
@@ -93,7 +93,7 @@ async def tick_paper(paper_token: str, session_token: str) -> MinimalPaper:
 @router.post("/papers/{paper_token}/end")
 async def finish_paper(paper_token: str, session_token: str):
 	""" finish the testing phase of a paper """
-	paper_dict = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	paper_dict = h.paper_calculate_status({"token": paper_token, "is_deleted": 0})
 	if not paper_dict:
 		h.http(404, "Paper not found")
 	if paper_dict["is_completed"] or paper_dict["finished_at"]:
@@ -111,7 +111,7 @@ async def finish_paper(paper_token: str, session_token: str):
 @router.get("/papers/{paper_token}/questions/{question_token}", response_model=DetailedQuestion)
 async def get_question_in_paper(paper_token: str, question_token: str) -> DetailedQuestion:
 	""" get the question and the options in a question of a specific paper """
-	paper = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	paper = h.paper_calculate_status({"token": paper_token, "is_deleted": 0})
 	if not paper:
 		h.http(404, "Paper not found")
 	if paper["is_completed"]:
@@ -125,7 +125,7 @@ async def get_question_in_paper(paper_token: str, question_token: str) -> Detail
 @router.post("/{paper_token}/questions/{question_token}", response_model=DetailedQuestion)
 async def save_answer_to_question(paper_token: str, question_token: str, choice: int, session_token: str, next_question_token: Optional[str] = None, is_completed: Optional[int] = None):
 	""" save user's answer to a question """
-	paper = h.db_selectsingle(c.tblPapers, {"token": paper_token, "is_deleted": 0})
+	paper = h.paper_calculate_status({"token": paper_token, "is_deleted": 0})
 	if not paper:
 		h.http(404, "Paper not found")
 	if paper["is_completed"]:
