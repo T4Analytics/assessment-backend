@@ -304,13 +304,14 @@ class Helpers:
 			return paper
 		# calculate paper's time and status
 		now = datetime.now()
-		diff = now - paper["started_at"]
-		spent_sec = diff.total_seconds()
-		update = {"spent_sec": spent_sec}
-		if spent_sec > paper["allowed_sec"]:
-			update["spent_sec"] = paper["allowed_sec"]
-			update["is_completed"] = 1
-			if not paper["finished_at"]:
-				update["finished_at"] = datetime.now()
-		self.db_update(c.tblPapers, {"id": paper["id"]}, update)
+		if paper["started_at"]:
+			diff = now - paper["started_at"]
+			spent_sec = diff.total_seconds()
+			update = {"spent_sec": spent_sec}
+			if spent_sec > paper["allowed_sec"]:
+				update["spent_sec"] = paper["allowed_sec"]
+				update["is_completed"] = 1
+				if not paper["finished_at"]:
+					update["finished_at"] = datetime.now()
+			self.db_update(c.tblPapers, {"id": paper["id"]}, update)
 		return self.db_selectsingle(c.tblPapers, conds)
