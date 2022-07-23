@@ -275,9 +275,9 @@ class Helpers:
 		result = {}
 		for (qorder, question) in questions.items():
 			if question["id"] in choices:
-				result[question["id"]] = {"token": question["token"], "choice": choices[question["id"]]["choice"]}
+				result[question["qorder"]] = {"token": question["token"], "qorder":question["qorder"], "choice": choices[question["id"]]["choice"]}
 			else:
-				result[question["id"]] = {"token": question["token"], "choice": 0}
+				result[question["qorder"]] = {"token": question["token"], "qorder":question["qorder"], "choice": 0}
 		if question_id:
 			result = {question_id: result[question_id]}
 		return result
