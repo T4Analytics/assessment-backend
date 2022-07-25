@@ -306,7 +306,7 @@ class Helpers:
 		now = datetime.now()
 		if paper["started_at"]:
 			diff = now - paper["started_at"]
-			spent_sec = diff.total_seconds()
+			spent_sec = diff.total_seconds() - 1
 			update = {"spent_sec": spent_sec}
 			if spent_sec > paper["allowed_sec"]:
 				update["spent_sec"] = paper["allowed_sec"]
